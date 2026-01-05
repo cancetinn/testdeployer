@@ -1,0 +1,7 @@
+Failed to login: Used disallowed intents
+Failed to login: Used disallowed intents
+Logged in as bot1457816589314297996#0406!
+Bot is ready to receive commands.
+(node:48796) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Received ping from eod2k

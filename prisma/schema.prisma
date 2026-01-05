@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  bots      Bot[]
+}
+
+model Bot {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  
+  status      String   @default("offline") // online, offline, starting, error
+  pid         Int?     // Process ID if running
+  port        Int?     // Port if applicable
+  
+  // Resources (Last known)
+  cpuUsage    Float    @default(0)
+  ramUsage    Float    @default(0)
+  
+  deployments Deployment[]
+  envVars     EnvironmentVariable[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Deployment {
+  id        String   @id @default(cuid())
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id])
+  
+  status    String   @default("queued") // queued, building, completed, failed
+  logPath   String?  // Path to log file
+  
+  startedAt DateTime @default(now())
+  finishedAt DateTime?
+}
+
+model EnvironmentVariable {
+  id        String   @id @default(cuid())
+  key       String
+  value     String
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([botId, key])
+}
