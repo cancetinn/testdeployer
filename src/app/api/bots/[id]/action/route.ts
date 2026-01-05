@@ -6,7 +6,7 @@ import { startBot, stopBot } from "@/lib/bot-runner";
 
 export async function POST(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return new NextResponse("Unauthorized", { status: 401 });
