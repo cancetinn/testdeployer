@@ -1,25 +1,5 @@
-Failed to login: Used disallowed intents
-Failed to login: Used disallowed intents
-Logged in as bot1457816589314297996#0406!
-Bot is ready to receive commands.
-(node:48796) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+[2026-01-06T01:56:09.432Z] [stderr] Failed to login: Hostname/IP does not match certificate's altnames: Host: discord.com. is not in the cert's altnames: DNS:*.btk.gov.tr, DNS:btk.gov.tr
+[2026-01-06T01:56:40.422Z] [stdout] Logged in as bot1457816589314297996#0406!
+[2026-01-06T01:56:40.422Z] [stdout] Bot is ready to receive commands.
+[2026-01-06T01:56:40.423Z] [stderr] (node:21572) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
-Received ping from eod2k
-node:events:485
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: Opening handshake has timed out
-    at ClientRequest.<anonymous> (/Users/can/Desktop/project-d/storage/bots/cmk1nfdbi0001l6767ad2fnvu/node_modules/ws/lib/websocket.js:878:7)
-    at ClientRequest.emit (node:events:507:28)
-    at TLSSocket.emitRequestTimeout (node:_http_client:863:9)
-    at Object.onceWrapper (node:events:621:28)
-    at TLSSocket.emit (node:events:507:28)
-    at Socket._onTimeout (node:net:609:8)
-    at listOnTimeout (node:internal/timers:608:17)
-    at process.processTimers (node:internal/timers:543:7)
-Emitted 'error' event on WebSocket instance at:
-    at emitErrorAndClose (/Users/can/Desktop/project-d/storage/bots/cmk1nfdbi0001l6767ad2fnvu/node_modules/ws/lib/websocket.js:1046:13)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
-
-Node.js v23.11.0

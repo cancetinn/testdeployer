@@ -110,7 +110,7 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                 const out = fs.openSync(logFile, 'a');
                 const err = fs.openSync(logFile, 'a');
 
-                const child = spawn('node', ['index.js'], {
+                const child = spawn('node', [path.join(botDir, 'index.js')], {
                     cwd: botDir,
                     env,
                     detached: true,
