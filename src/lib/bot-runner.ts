@@ -113,9 +113,38 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                 const child = spawn('node', ['index.js'], {
                     cwd: botDir,
                     env,
-                    detached: true, // Important so it survives if parent exits (optional but good for persistence)
-                    stdio: ['ignore', out, err]
+                    detached: true,
+                    stdio: ['ignore', 'pipe', 'pipe'] // Pipe stdio to capture
                 });
+
+                // Stream logs to File and DB
+                const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+
+                const handleLog = async (data: Buffer, type: 'stdout' | 'stderr') => {
+                    const content = data.toString();
+
+                    // 1. File (Legacy/Backup)
+                    logStream.write(`[${new Date().toISOString()}] [${type}] ${content}`);
+
+                    // 2. Database (New)
+                    try {
+                        const cleanContent = content.trim();
+                        if (cleanContent) {
+                            await prisma.botLog.create({
+                                data: {
+                                    botId,
+                                    content: cleanContent,
+                                    type
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Failed to write log to DB", e);
+                    }
+                };
+
+                child.stdout?.on('data', (d) => handleLog(d, 'stdout'));
+                child.stderr?.on('data', (d) => handleLog(d, 'stderr'));
 
                 child.unref();
 
@@ -197,14 +226,26 @@ export async function syncBotStatus(bot: any) {
 }
 
 export async function getBotLogs(botId: string): Promise<string[]> {
-    const logPath = path.join(STORAGE_DIR, botId, 'app.log');
-    if (fs.existsSync(logPath)) {
-        try {
+    try {
+        // Try DB first
+        const dbLogs = await prisma.botLog.findMany({
+            where: { botId },
+            orderBy: { createdAt: 'desc' },
+            take: 100
+        });
+
+        if (dbLogs.length > 0) {
+            return dbLogs.reverse().map(l => `[${l.createdAt.toISOString()}] [${l.type}] ${l.content}`);
+        }
+
+        // Fallback to File
+        const logPath = path.join(STORAGE_DIR, botId, 'app.log');
+        if (fs.existsSync(logPath)) {
             const content = fs.readFileSync(logPath, 'utf-8');
             return content.split('\n').filter(Boolean).slice(-100);
-        } catch (e) {
-            return ["Error reading logs"];
         }
+    } catch (e) {
+        console.error("Error reading logs", e);
     }
     return ["No logs yet."];
 }

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { LayoutDashboard, Plus, Settings, LogOut, Box, Terminal } from 'lucide-react';
+import { LayoutDashboard, Plus, Settings, LogOut, Box, Terminal, LifeBuoy, Shield, HardDrive } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from 'next-auth/react';
@@ -57,6 +57,41 @@ export function Sidebar() {
                     ))}
                 </div>
 
+
+
+                <div className="mt-6 space-y-2">
+                    <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                        System
+                    </p>
+                    {/* Support Link - Visible to Everyone */}
+                    <Button variant={pathname === '/dashboard/support' ? 'secondary' : 'ghost'} className="w-full justify-start gap-3" asChild>
+                        <Link href="/dashboard/support">
+                            <LifeBuoy className="h-4 w-4" />
+                            Help & Support
+                        </Link>
+                    </Button>
+
+                    {/* Admin Link - Visible only to Staff/Admin/Founder */}
+                    {(session?.user as any)?.role && ['FOUNDER', 'ADMIN', 'STAFF'].includes((session?.user as any).role) && (
+                        <Button variant={pathname?.startsWith('/dashboard/admin') ? 'secondary' : 'ghost'} className="w-full justify-start gap-3 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10" asChild>
+                            <Link href="/dashboard/admin">
+                                <Shield className="h-4 w-4" />
+                                Admin Panel
+                            </Link>
+                        </Button>
+                    )}
+
+                    {/* System Link - Visible only to Founder */}
+                    {(session?.user as any)?.role === 'FOUNDER' && (
+                        <Button variant={pathname?.startsWith('/dashboard/system') ? 'secondary' : 'ghost'} className="w-full justify-start gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10" asChild>
+                            <Link href="/dashboard/system">
+                                <HardDrive className="h-4 w-4" />
+                                System Internals
+                            </Link>
+                        </Button>
+                    )}
+                </div>
+
                 <div className="mt-8">
                     <h3 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                         Quick Actions
@@ -68,7 +103,7 @@ export function Sidebar() {
                         </Link>
                     </Button>
                 </div>
-            </ScrollArea>
+            </ScrollArea >
 
             <div className="p-4 mt-auto border-t border-sidebar-border">
                 <DropdownMenu>
@@ -114,6 +149,6 @@ export function Sidebar() {
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-        </div>
+        </div >
     );
 }

@@ -13,7 +13,7 @@ export async function GET() {
         const deployments = await prisma.deployment.findMany({
             where: {
                 bot: {
-                    userId: session.user.id
+                    ownerId: session.user.id
                 }
             },
             orderBy: {

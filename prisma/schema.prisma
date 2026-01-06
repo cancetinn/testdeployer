@@ -12,10 +12,23 @@ model User {
   name      String?
   email     String   @unique
   password  String
+  role      Role     @default(USER) // FOUNDER, ADMIN, STAFF, USER
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   bots      Bot[]
+  
+  // Support System
+  tickets         Ticket[]        @relation("TicketAuthor")
+  assignedTickets Ticket[]        @relation("TicketAssignee")
+  ticketMessages  TicketMessage[]
+}
+
+enum Role {
+  FOUNDER
+  ADMIN
+  STAFF
+  USER
 }
 
 model Bot {
@@ -35,6 +48,7 @@ model Bot {
   
   deployments Deployment[]
   envVars     EnvironmentVariable[]
+  logs        BotLog[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -63,4 +77,47 @@ model EnvironmentVariable {
   updatedAt DateTime @updatedAt
   
   @@unique([botId, key])
+}
+
+model Ticket {
+  id          String   @id @default(cuid())
+  subject     String
+  category    String   // 'technical', 'billing', 'other'
+  status      String   @default("OPEN") // OPEN, ANSWERED, CLOSED, RESOLVED
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  
+  authorId    String
+  author      User     @relation("TicketAuthor", fields: [authorId], references: [id])
+  
+  assignedToId String?
+  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  
+  messages    TicketMessage[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  content   String
+  
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  
+  createdAt DateTime @default(now())
+}
+
+model BotLog {
+  id        String   @id @default(cuid())
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  content   String
+  type      String   @default("info") // info, error, stdout, stderr
+  createdAt DateTime @default(now())
+  
+  @@index([botId, createdAt])
 }
