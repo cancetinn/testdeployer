@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -8,11 +10,48 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Folder, File, Database, HardDrive, ArrowLeft, Loader2 } from 'lucide-react';
+import { Folder, File, Database, HardDrive, ArrowLeft, Loader2, ShieldAlert } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
 export default function SystemDashboard() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
+    const [authorized, setAuthorized] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        if (status === 'loading') return;
+
+        const userRole = (session?.user as any)?.role;
+        if (userRole !== 'FOUNDER') {
+            setAuthorized(false);
+            toast.error('Access Denied: FOUNDER only');
+            router.replace('/dashboard');
+        } else {
+            setAuthorized(true);
+        }
+    }, [session, status, router]);
+
+    // Loading state
+    if (status === 'loading' || authorized === null) {
+        return (
+            <div className="flex-1 flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    // Unauthorized state (briefly shown before redirect)
+    if (!authorized) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4">
+                <ShieldAlert className="h-16 w-16 text-destructive" />
+                <h2 className="text-2xl font-bold">Access Denied</h2>
+                <p className="text-muted-foreground">This page is restricted to FOUNDER role only.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
             <div className="flex items-center justify-between">
@@ -58,7 +97,6 @@ function DatabaseViewer() {
         });
     }, []);
 
-    // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(search), 500);
         return () => clearTimeout(timer);
@@ -70,7 +108,7 @@ function DatabaseViewer() {
         fetch(`/api/system/db?model=${model}&search=${debouncedSearch}`)
             .then(res => res.json())
             .then(res => setData(res.data || []))
-            .catch(e => toast.error('Failed to load data'))
+            .catch(() => toast.error('Failed to load data'))
             .finally(() => setLoading(false));
     }, [model, debouncedSearch]);
 
@@ -83,12 +121,10 @@ function DatabaseViewer() {
             });
             if (res.ok) {
                 toast.success('Updated record');
-                // Optimistic update? Or refetch? Refetch safer for now.
-                // setData(prev => prev.map(row => row.id === id ? { ...row, [field]: value } : row));
             } else {
                 toast.error('Update failed');
             }
-        } catch (e) {
+        } catch {
             toast.error('Update error');
         }
     };
@@ -132,7 +168,6 @@ function DatabaseViewer() {
                                     <TableRow key={i} className="hover:bg-white/5 border-white/5">
                                         {Object.entries(row).slice(0, 8).map(([key, value]: any) => (
                                             <TableCell key={key} className="whitespace-nowrap font-mono text-xs max-w-[200px]">
-                                                {/* Simple inline edit for strings/numbers. Read-only for objects/dates for simplicity */}
                                                 {(typeof value === 'string' || typeof value === 'number') && key !== 'id' && !key.endsWith('Id') ? (
                                                     <input
                                                         className="bg-transparent border-transparent hover:border-white/20 border rounded px-1 w-full focus:bg-black focus:border-primary outline-none transition-colors"
@@ -177,7 +212,7 @@ function FileManager() {
                 setPath(res.path);
                 setFiles(res.files);
             })
-            .catch(e => toast.error('Failed to load path'))
+            .catch(() => toast.error('Failed to load path'))
             .finally(() => setLoading(false));
     };
 

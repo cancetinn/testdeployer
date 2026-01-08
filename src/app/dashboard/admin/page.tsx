@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Search, Shield, ShieldAlert, UserCog, Users, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -47,7 +48,9 @@ interface Ticket {
 }
 
 export default function AdminDashboard() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
+    const router = useRouter();
+    const [authorized, setAuthorized] = useState<boolean | null>(null);
     const [activeTab, setActiveTab] = useState('tickets');
 
     // Confirmation State
@@ -62,15 +65,33 @@ export default function AdminDashboard() {
     const [userSearch, setUserSearch] = useState('');
     const [ticketFilter, setTicketFilter] = useState('ALL');
 
+    // Authorization check
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (status === 'loading') return;
+
+        const userRole = (session?.user as any)?.role;
+        const allowedRoles = ['FOUNDER', 'ADMIN', 'STAFF'];
+
+        if (!userRole || !allowedRoles.includes(userRole)) {
+            setAuthorized(false);
+            toast.error('Access Denied: Staff access required');
+            router.replace('/dashboard');
+        } else {
+            setAuthorized(true);
+        }
+    }, [session, status, router]);
+
+    useEffect(() => {
+        if (authorized) {
+            fetchData();
+        }
+    }, [authorized]);
 
     const fetchData = async () => {
         try {
             const [usersRes, ticketsRes] = await Promise.all([
                 fetch('/api/admin/users'),
-                fetch('/api/tickets?scope=all') // Staff sees all tickets explicitly
+                fetch('/api/tickets?scope=all')
             ]);
 
             if (usersRes.ok) setUsers(await usersRes.json());
@@ -138,6 +159,26 @@ export default function AdminDashboard() {
         u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
         u.email.toLowerCase().includes(userSearch.toLowerCase())
     );
+
+    // Loading state
+    if (status === 'loading' || authorized === null) {
+        return (
+            <div className="flex-1 flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    // Unauthorized state (briefly shown before redirect)
+    if (!authorized) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4">
+                <ShieldAlert className="h-16 w-16 text-destructive" />
+                <h2 className="text-2xl font-bold">Access Denied</h2>
+                <p className="text-muted-foreground">This page requires Staff, Admin, or Founder privileges.</p>
+            </div>
+        );
+    }
 
     if (loading) return <div className="p-8 text-center"><Loader2 className="animate-spin" /></div>;
 
