@@ -69,6 +69,8 @@ export default function NewProjectPage() {
                         }
                     });
                     console.log("GitHub Response Status:", res.status);
+                    console.log("Token Scopes:", res.headers.get("x-oauth-scopes"));
+                    console.log("Accepted Scopes:", res.headers.get("x-oauth-accepted-scopes"));
                     if (res.ok) {
                         const data = await res.json();
                         console.log("Fetched Repos Count:", data.length);
