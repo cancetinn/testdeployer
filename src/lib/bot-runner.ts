@@ -78,14 +78,24 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                  `);
             }
 
+            // Create Deployment Record
+            let deployment;
             // Install dependencies locally
             try {
                 if (fs.existsSync(path.join(botDir, 'package.json'))) {
                     console.log("Installing dependencies...");
+                    // We verify by running it.
                     await execAsync('npm install', { cwd: botDir });
                 }
-            } catch (e) {
-                console.error("NPM Install failed", e);
+            } catch (e: any) {
+                const msg = `[SYSTEM ERROR] NPM Install failed: ${e.message}`;
+                console.error(msg);
+                await prisma.botLog.create({
+                    data: { botId, content: msg, type: 'stderr' }
+                });
+                // Abort start
+                await updateDeployment(deployment?.id || '', 'failed', 'Dependency installation failed.');
+                return;
             }
 
             // Fetch Environment Variables
@@ -93,12 +103,13 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                 where: { botId }
             });
 
-            // Create Deployment Record
-            let deployment;
-            try {
-                deployment = await createDeployment(botId, 'building');
-            } catch (err) {
-                console.error("Failed to create deployment record", err);
+            // Create Deployment Record (if not already exists from upload?)
+            // Actually upload creates one, but 'start' button creates one too?
+            // If we have deployment from above, use it.
+            if (!deployment) {
+                try {
+                    deployment = await createDeployment(botId, 'building');
+                } catch (err) { }
             }
 
             // Prepare Env
@@ -110,24 +121,10 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
             // Security: Ensure token exists but do not log it
             if (!env.DISCORD_TOKEN) {
                 const msg = "[SYSTEM WARN] DISCORD_TOKEN is missing! The bot will likely fail to start. Please check 'Environment' tab.";
-                console.warn(`[WARN] Bot ${botId} missing DISCORD_TOKEN`);
 
-                // Write to log file
-                const logPath = path.join(botDir, 'app.log');
-                try {
-                    fs.appendFileSync(logPath, `[${new Date().toISOString()}] [stderr] ${msg}\n`);
-                } catch (e) { }
-
-                // Write to DB so it shows in dashboard immediately
-                try {
-                    await prisma.botLog.create({
-                        data: {
-                            botId,
-                            content: msg,
-                            type: 'stderr'
-                        }
-                    });
-                } catch (e) { }
+                await prisma.botLog.create({
+                    data: { botId, content: msg, type: 'stderr' }
+                }).catch(() => { });
             }
 
             try {
@@ -146,40 +143,36 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                             entryFile = pkg.main;
                         }
                     }
-                } catch (e) {
-                    console.warn("Failed to parse package.json for entry point, defaulting to index.js");
-                }
-
-                console.log(`Using entry point: ${entryFile}`);
+                } catch (e) { }
 
                 // Check if file actually exists
                 if (!fs.existsSync(path.join(botDir, entryFile))) {
                     const errorMsg = `[SYSTEM ERROR] Entry file '${entryFile}' not found. Please check your package.json 'main' field.`;
-                    console.error(errorMsg);
-
-                    // Log error to DB
                     await prisma.botLog.create({
-                        data: {
-                            botId,
-                            content: errorMsg,
-                            type: 'stderr'
-                        }
+                        data: { botId, content: errorMsg, type: 'stderr' }
                     });
 
-                    // Mark as offline immediately
-                    await prisma.bot.update({
-                        where: { id: botId },
-                        data: { status: 'offline' }
-                    });
-
-                    return; // Stop execution
+                    await prisma.bot.update({ where: { id: botId }, data: { status: 'offline' } });
+                    return;
                 }
 
                 const child = spawn('node', [entryFile], {
                     cwd: botDir,
                     env,
                     detached: true,
-                    stdio: ['ignore', 'pipe', 'pipe'] // Pipe stdio to capture
+                    stdio: ['ignore', 'pipe', 'pipe']
+                });
+
+                // Capture immediate exit
+                child.on('exit', async (code) => {
+                    if (code !== 0 && code !== null) {
+                        const msg = `[SYSTEM ERROR] Process exited immediately with code ${code}. Check code for syntax errors or missing modules.`;
+                        await prisma.botLog.create({
+                            data: { botId, content: msg, type: 'stderr' }
+                        }).catch(() => { });
+
+                        await prisma.bot.update({ where: { id: botId }, data: { status: 'offline' } });
+                    }
                 });
 
                 // Stream logs to File and DB
