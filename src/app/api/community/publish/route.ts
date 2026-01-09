@@ -8,12 +8,23 @@ import path from 'path';
 const BOTS_DIR = process.env.BOTS_DIR || './storage/bots';
 const COMMUNITY_DIR = process.env.COMMUNITY_DIR || './public';
 
+import { rateLimit } from '@/lib/rate-limit';
+import { headers } from 'next/headers';
+
 export async function POST(request: Request) {
     try {
         const session = await getServerSession(authOptions);
         const userId = (session?.user as any)?.id;
         if (!userId) {
             return new NextResponse('Unauthorized', { status: 401 });
+        }
+
+        // Rate Limiting
+        const ip = (await headers()).get('x-forwarded-for') || 'unknown';
+        const identifier = `publish-${userId}-${ip}`;
+        const { success } = rateLimit(identifier, { interval: 60 * 60 * 1000, limit: 5 });
+        if (!success) {
+            return new NextResponse('Rate limit exceeded (5/hour)', { status: 429 });
         }
 
         const body = await request.json();

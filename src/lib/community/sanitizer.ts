@@ -47,25 +47,39 @@ const EXCLUDED_PATTERNS = [
 ];
 
 // Regex patterns to detect secrets in code
+// Enhanced Regex patterns to detect secrets in code
 const SECRET_PATTERNS = [
-    // Discord Bot Token
-    /[MN][A-Za-z\d]{23,}\.[\w-]{6}\.[\w-]{27,}/g,
+    // Discord Bot Token (Standard & New Format)
+    /([MN][A-Za-z\d]{23,}\.[\w-]{6}\.[\w-]{27,})|([A-Za-z0-9_-]{50,}\.[A-Za-z0-9_-]{20,})/g,
 
-    // Generic API keys
+    // Generic API keys (strict)
     /(?:api[_-]?key|apikey)['":\s]*['"=]?\s*['"]?([a-zA-Z0-9_-]{20,})['"]?/gi,
 
-    // Generic secrets
+    // Generic secrets (strict)
     /(?:secret|password|token|auth)['":\s]*['"=]?\s*['"]?([a-zA-Z0-9_-]{16,})['"]?/gi,
 
-    // AWS Access Keys
-    /AKIA[0-9A-Z]{16}/g,
+    // AWS Keys
+    /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g,
+
+    // Stripe
+    /sk_live_[0-9a-zA-Z]{24}/g,
+
+    // OpenAI
+    /sk-[a-zA-Z0-9]{48}/g,
 
     // MongoDB connection strings
     /mongodb\+srv:\/\/[^:]+:[^@]+@/g,
 
     // Database URLs with passwords
     /(?:mysql|postgres|postgresql):\/\/[^:]+:[^@]+@/g,
+
+    // Private Keys strictly
+    /-----BEGIN (?:RSA )?PRIVATE KEY-----/g,
 ];
+
+// Max file size to process (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 
 // Safe file extensions to include
 const SAFE_EXTENSIONS = [
@@ -145,7 +159,15 @@ async function getSafeFiles(dirPath: string, basePath: string = dirPath): Promis
                 const subFiles = await getSafeFiles(fullPath, basePath);
                 safeFiles.push(...subFiles);
             } else if (entry.isFile()) {
-                safeFiles.push(fullPath);
+                try {
+                    const stats = await fs.stat(fullPath);
+                    if (stats.size > MAX_FILE_SIZE) {
+                        continue;
+                    }
+                    safeFiles.push(fullPath);
+                } catch (e) {
+                    console.error(`Failed to stat file ${fullPath}`, e);
+                }
             }
         }
     } catch (error) {
