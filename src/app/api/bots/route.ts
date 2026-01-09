@@ -99,6 +99,61 @@ export async function POST(req: Request) {
             },
         });
 
+        // Detect storage path (Docker vs Local)
+        // In this environment, we assume specific paths based on previous errors
+        // The error log showed: /root/testdeployer/storage/bots/...
+        const botId = bot.id;
+        const storagePath = process.env.STORAGE_PATH || '/root/testdeployer/storage/bots';
+        // fallback to logged path if env missing, or current directory structure
+
+        if (repoUrl) {
+            // Fetch GitHub Token
+            const account = await prisma.account.findFirst({
+                where: {
+                    userId: user.id,
+                    provider: 'github'
+                }
+            });
+
+            if (account && account.access_token) {
+                const fs = require('fs');
+                const path = require('path');
+                const { exec } = require('child_process');
+                const util = require('util');
+                const execAsync = util.promisify(exec);
+
+                const botDir = path.join(storagePath, botId);
+
+                // Ensure parent dir exists
+                if (!fs.existsSync(storagePath)) {
+                    fs.mkdirSync(storagePath, { recursive: true });
+                }
+
+                // Construct Auth URL
+                // user/repo -> https://accessToken@github.com/user/repo.git
+                // repoUrl from frontend is html_url (https://github.com/user/repo)
+                const cleanUrl = repoUrl.replace('https://github.com/', '');
+                const cloneUrl = `https://${account.access_token}@github.com/${cleanUrl}.git`;
+
+                console.log(`Cloning ${cleanUrl} to ${botDir}...`);
+
+                try {
+                    await execAsync(`git clone ${cloneUrl} ${botDir}`);
+                    console.log("Clone successful!");
+
+                    // Install dependencies (MVP: npm install)
+                    if (fs.existsSync(path.join(botDir, 'package.json'))) {
+                        console.log("Installing dependencies...");
+                        await execAsync(`cd ${botDir} && npm install --production`);
+                    }
+
+                } catch (cloneError) {
+                    console.error("Clone failed:", cloneError);
+                    // We don't fail the request, but log it. User can see logs.
+                }
+            }
+        }
+
         return NextResponse.json(bot);
     } catch (error) {
         console.error(error);
