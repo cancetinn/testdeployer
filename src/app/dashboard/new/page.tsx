@@ -61,14 +61,21 @@ export default function NewProjectPage() {
             const fetchRepos = async () => {
                 setLoadingRepos(true);
                 try {
-                    const res = await fetch('https://api.github.com/user/repos?visibility=all&sort=updated&per_page=100', {
+                    const url = 'https://api.github.com/user/repos?visibility=all&affiliation=owner,collaborator,organization_member&sort=updated&per_page=100';
+                    console.log("Fetching repos from:", url);
+                    const res = await fetch(url, {
                         headers: {
                             Authorization: `Bearer ${(session as any).accessToken}`
                         }
                     });
+                    console.log("GitHub Response Status:", res.status);
                     if (res.ok) {
                         const data = await res.json();
+                        console.log("Fetched Repos Count:", data.length);
+                        console.log("First Repo:", data[0]);
                         setRepos(data);
+                    } else {
+                        console.error("Failed to fetch repos:", await res.text());
                     }
                 } catch (error) {
                     console.error("Failed to fetch repos", error);
