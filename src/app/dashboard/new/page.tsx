@@ -61,7 +61,7 @@ export default function NewProjectPage() {
             const fetchRepos = async () => {
                 setLoadingRepos(true);
                 try {
-                    const res = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
+                    const res = await fetch('https://api.github.com/user/repos?visibility=all&sort=updated&per_page=100', {
                         headers: {
                             Authorization: `Bearer ${(session as any).accessToken}`
                         }
