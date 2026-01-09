@@ -144,13 +144,25 @@ export async function POST(req: Request) {
                     // Install dependencies (MVP: npm install)
                     if (fs.existsSync(path.join(botDir, 'package.json'))) {
                         console.log("Installing dependencies...");
-                        await execAsync(`cd ${botDir} && npm install --production`);
+                        try {
+                            await execAsync(`cd ${botDir} && npm install --production`);
+                        } catch (npmError) {
+                            console.error("NPM Install failed:", npmError);
+                        }
+                    } else {
+                        console.warn("No package.json found in cloned repo");
                     }
 
-                } catch (cloneError) {
+                } catch (cloneError: any) {
                     console.error("Clone failed:", cloneError);
-                    // We don't fail the request, but log it. User can see logs.
+                    // Return error to frontend so user knows why deployment failed
+                    return NextResponse.json({
+                        ...bot,
+                        error: `Git clone failed: ${cloneError.message || cloneError}`
+                    }, { status: 500 });
                 }
+            } else {
+                console.error("GitHub account not found for user");
             }
         }
 
