@@ -52,11 +52,20 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
 
             const botDir = path.join(STORAGE_DIR, botId);
 
-            // Ensure bot directory exists (it might be missing if clone failed)
+            // Ensure bot directory exists
             if (!fs.existsSync(botDir)) {
                 console.warn(`[WARN] Bot directory missing for ${botId}, creating empty dir.`);
                 fs.mkdirSync(botDir, { recursive: true });
             }
+
+            // DEBUG: List files to ensure clone worked
+            try {
+                const files = fs.readdirSync(botDir);
+                console.log(`[DEBUG] Files in ${botId}: ${files.join(', ')}`);
+                await prisma.botLog.create({
+                    data: { botId, content: `[SYSTEM INFO] Files in dir: ${files.join(', ')}`, type: 'stdout' }
+                });
+            } catch (e) { }
 
             // Generate simple package.json if not exists
             if (!fs.existsSync(path.join(botDir, 'package.json'))) {
@@ -74,7 +83,8 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
             if (!fs.existsSync(path.join(botDir, 'index.js'))) {
                 fs.writeFileSync(path.join(botDir, 'index.js'), `
                     console.log("Bot started!");
-                    // setInterval(() => console.log("Heartbeat..."), 60000); // Reduced frequency
+                    // Keep process alive
+                    setInterval(() => console.log("Heartbeat..."), 60000); 
                  `);
             }
 
