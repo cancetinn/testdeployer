@@ -175,7 +175,7 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                     return; // Stop execution
                 }
 
-                const child = spawn('node', [path.join(botDir, entryFile)], {
+                const child = spawn('node', [entryFile], {
                     cwd: botDir,
                     env,
                     detached: true,
