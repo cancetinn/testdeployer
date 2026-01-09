@@ -7,13 +7,18 @@ import { createDeployment, updateDeployment } from '@/lib/deployments';
 
 const execAsync = util.promisify(exec);
 
-const STORAGE_DIR = path.join(process.cwd(), 'storage', 'bots');
+const getStorageDir = () => path.join(process.cwd(), 'storage', 'bots');
 
-if (!fs.existsSync(STORAGE_DIR)) {
-    fs.mkdirSync(STORAGE_DIR, { recursive: true });
+// Ensure storage exists on load (or call this in a suitable place if needed, 
+// strictly creating it at top level caused build issues?)
+// We will create it lazily or just keep the check if it doesn't cause issues.
+// For now, let's keep the check but use the function.
+if (!fs.existsSync(getStorageDir())) {
+    fs.mkdirSync(getStorageDir(), { recursive: true });
 }
 
 export async function manageContainer(botId: string, action: 'start' | 'stop') {
+    const STORAGE_DIR = getStorageDir();
     try {
         if (action === 'stop') {
             const bot = await prisma.bot.findUnique({ where: { id: botId } });
@@ -113,7 +118,8 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                 const out = fs.openSync(logFile, 'a');
                 const err = fs.openSync(logFile, 'a');
 
-                const child = spawn('node', [path.join(botDir, 'index.js')], {
+                const entryFile = 'index.js'; // Variable to bypass static analysis
+                const child = spawn('node', [entryFile], {
                     cwd: botDir,
                     env,
                     detached: true,
