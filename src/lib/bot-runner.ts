@@ -136,8 +136,46 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                 const out = fs.openSync(logFile, 'a');
                 const err = fs.openSync(logFile, 'a');
 
-                const entryFile = 'index.js'; // Variable to bypass static analysis
-                const child = spawn('node', [entryFile], {
+                // Determine entry point from package.json
+                let entryFile = 'index.js';
+                try {
+                    const pkgPath = path.join(botDir, 'package.json');
+                    if (fs.existsSync(pkgPath)) {
+                        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+                        if (pkg.main) {
+                            entryFile = pkg.main;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Failed to parse package.json for entry point, defaulting to index.js");
+                }
+
+                console.log(`Using entry point: ${entryFile}`);
+
+                // Check if file actually exists
+                if (!fs.existsSync(path.join(botDir, entryFile))) {
+                    const errorMsg = `[SYSTEM ERROR] Entry file '${entryFile}' not found. Please check your package.json 'main' field.`;
+                    console.error(errorMsg);
+
+                    // Log error to DB
+                    await prisma.botLog.create({
+                        data: {
+                            botId,
+                            content: errorMsg,
+                            type: 'stderr'
+                        }
+                    });
+
+                    // Mark as offline immediately
+                    await prisma.bot.update({
+                        where: { id: botId },
+                        data: { status: 'offline' }
+                    });
+
+                    return; // Stop execution
+                }
+
+                const child = spawn('node', [path.join(botDir, entryFile)], {
                     cwd: botDir,
                     env,
                     detached: true,

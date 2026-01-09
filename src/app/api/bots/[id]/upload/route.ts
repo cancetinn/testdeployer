@@ -60,6 +60,23 @@ export async function POST(
         // Cleanup zip file
         fs.unlinkSync(zipPath);
 
+        // --- VERIFICATION STEP ---
+        const { analyzeBotProject } = require('@/lib/bot-analyzer');
+        const analysis = await analyzeBotProject(botDir);
+
+        if (!analysis.isValidDiscordBot) {
+            console.warn(`[SECURITY] Bot ${id} upload rejected: Code does not look like a Discord bot.`);
+
+            // Delete the invalid files to prevent execution
+            fs.rmSync(botDir, { recursive: true, force: true });
+
+            // Re-create empty dir to avoid other errors
+            fs.mkdirSync(botDir, { recursive: true });
+
+            throw new Error("Security Check Failed: The uploaded code does not appear to contain a valid Discord bot (missing discord.js or client setup).");
+        }
+        // --- END VERIFICATION ---
+
         if (deployment) {
             await updateDeployment(deployment.id, 'completed', 'Code uploaded successfully. Restart bot to apply.');
         }

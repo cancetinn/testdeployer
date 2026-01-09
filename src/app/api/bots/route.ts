@@ -153,6 +153,23 @@ export async function POST(req: Request) {
                         console.warn("No package.json found in cloned repo");
                     }
 
+                    // --- VERIFICATION STEP ---
+                    const { analyzeBotProject } = require('@/lib/bot-analyzer');
+                    const analysis = await analyzeBotProject(botDir);
+
+                    if (!analysis.isValidDiscordBot) {
+                        console.warn(`[SECURITY] Bot ${botId} deleted: Code does not look like a Discord bot.`);
+
+                        // Cleanup
+                        fs.rmSync(botDir, { recursive: true, force: true });
+                        await prisma.bot.delete({ where: { id: botId } });
+
+                        return NextResponse.json({
+                            error: "Security Check Failed: The imported repository does not appear to contain a valid Discord bot (missing discord.js or client setup)."
+                        }, { status: 400 });
+                    }
+                    // --- END VERIFICATION ---
+
                 } catch (cloneError: any) {
                     console.error("Clone failed:", cloneError);
                     // Return error to frontend so user knows why deployment failed
