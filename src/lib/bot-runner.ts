@@ -7,15 +7,12 @@ import { createDeployment, updateDeployment } from '@/lib/deployments';
 
 const execAsync = util.promisify(exec);
 
-const getStorageDir = () => path.join(process.cwd(), 'storage', 'bots');
+import { getStorageDir } from '@/lib/storage';
 
-// Ensure storage exists on load (or call this in a suitable place if needed, 
-// strictly creating it at top level caused build issues?)
-// We will create it lazily or just keep the check if it doesn't cause issues.
-// For now, let's keep the check but use the function.
-if (!fs.existsSync(getStorageDir())) {
-    fs.mkdirSync(getStorageDir(), { recursive: true });
-}
+const execAsync = util.promisify(exec);
+
+// Legacy check removed, as getStorageDir handles creation
+
 
 export async function manageContainer(botId: string, action: 'start' | 'stop') {
     const STORAGE_DIR = getStorageDir();

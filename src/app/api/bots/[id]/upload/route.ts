@@ -45,7 +45,9 @@ export async function POST(
         const buffer = Buffer.from(await file.arrayBuffer());
 
         // Define Paths
-        const botDir = path.join(process.cwd(), 'storage', 'bots', id);
+        const { getStorageDir } = require('@/lib/storage');
+        const storagePath = getStorageDir();
+        const botDir = path.join(storagePath, id);
         if (!fs.existsSync(botDir)) {
             fs.mkdirSync(botDir, { recursive: true });
         }

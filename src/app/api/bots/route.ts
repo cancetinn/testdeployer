@@ -100,10 +100,8 @@ export async function POST(req: Request) {
         });
 
         // Detect storage path (Docker vs Local)
-        // In this environment, we assume specific paths based on previous errors
-        // The error log showed: /root/testdeployer/storage/bots/...
-        const botId = bot.id;
-        const storagePath = process.env.STORAGE_PATH || '/root/testdeployer/storage/bots';
+        const { getStorageDir } = require('@/lib/storage');
+        const storagePath = getStorageDir();
         // fallback to logged path if env missing, or current directory structure
 
         if (repoUrl) {
