@@ -109,7 +109,25 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
 
             // Security: Ensure token exists but do not log it
             if (!env.DISCORD_TOKEN) {
+                const msg = "[SYSTEM WARN] DISCORD_TOKEN is missing! The bot will likely fail to start. Please check 'Environment' tab.";
                 console.warn(`[WARN] Bot ${botId} missing DISCORD_TOKEN`);
+
+                // Write to log file
+                const logPath = path.join(botDir, 'app.log');
+                try {
+                    fs.appendFileSync(logPath, `[${new Date().toISOString()}] [stderr] ${msg}\n`);
+                } catch (e) { }
+
+                // Write to DB so it shows in dashboard immediately
+                try {
+                    await prisma.botLog.create({
+                        data: {
+                            botId,
+                            content: msg,
+                            type: 'stderr'
+                        }
+                    });
+                } catch (e) { }
             }
 
             try {
@@ -235,6 +253,7 @@ export async function syncBotStatus(bot: any) {
 }
 
 export async function getBotLogs(botId: string): Promise<string[]> {
+    const STORAGE_DIR = getStorageDir();
     try {
         // Try DB first
         const dbLogs = await prisma.botLog.findMany({
@@ -260,6 +279,7 @@ export async function getBotLogs(botId: string): Promise<string[]> {
 }
 
 export async function clearBotLogs(botId: string) {
+    const STORAGE_DIR = getStorageDir();
     const logPath = path.join(STORAGE_DIR, botId, 'app.log');
     if (fs.existsSync(logPath)) {
         fs.writeFileSync(logPath, '');
