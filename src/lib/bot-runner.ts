@@ -47,6 +47,12 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
 
             const botDir = path.join(STORAGE_DIR, botId);
 
+            // Ensure bot directory exists (it might be missing if clone failed)
+            if (!fs.existsSync(botDir)) {
+                console.warn(`[WARN] Bot directory missing for ${botId}, creating empty dir.`);
+                fs.mkdirSync(botDir, { recursive: true });
+            }
+
             // Generate simple package.json if not exists
             if (!fs.existsSync(path.join(botDir, 'package.json'))) {
                 fs.writeFileSync(path.join(botDir, 'package.json'), JSON.stringify({
