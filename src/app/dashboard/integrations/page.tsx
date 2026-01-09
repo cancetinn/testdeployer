@@ -61,7 +61,7 @@ export default function IntegrationsPage() {
 
                     <div className="mt-4 md:mt-0 flex items-center gap-3">
                         {isConnected ? (
-                            <Button variant="outline" className="border-red-500/20 hover:bg-red-500/10 text-red-400 hover:text-red-300" onClick={() => signOut()}>
+                            <Button variant="outline" className="border-red-500/20 hover:bg-red-500/10 text-red-400 hover:text-red-300" onClick={handleDisconnect}>
                                 Disconnect
                             </Button>
                         ) : (
