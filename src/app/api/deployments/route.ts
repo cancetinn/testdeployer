@@ -17,7 +17,7 @@ export async function GET() {
                 }
             },
             orderBy: {
-                createdAt: 'desc'
+                startedAt: 'desc'
             },
             include: {
                 bot: {

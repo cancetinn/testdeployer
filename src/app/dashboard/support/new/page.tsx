@@ -3,27 +3,21 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Send, AlertTriangle, Clock, AlertCircle, HelpCircle, MessageSquare, Zap, CreditCard, Settings } from 'lucide-react';
+import { Loader2, ArrowLeft, Send, Zap, CreditCard, HelpCircle, Bug, AlertTriangle, Minus, ArrowUp, ArrowUpRight } from 'lucide-react';
 
 const categories = [
-    { value: 'technical', label: 'Technical Issue', icon: Settings, description: 'Bugs, errors, or technical problems' },
-    { value: 'billing', label: 'Billing & Account', icon: CreditCard, description: 'Payments, subscriptions, account access' },
-    { value: 'feature', label: 'Feature Request', icon: Zap, description: 'Suggest new features or improvements' },
-    { value: 'other', label: 'General Inquiry', icon: HelpCircle, description: 'Other questions or feedback' },
+    { value: 'technical', label: 'Technical Issue', icon: Bug, description: 'Bugs, errors, or problems', color: 'from-red-500/20 to-red-500/5 border-red-500/20 hover:border-red-500/40' },
+    { value: 'billing', label: 'Billing', icon: CreditCard, description: 'Payments & subscriptions', color: 'from-green-500/20 to-green-500/5 border-green-500/20 hover:border-green-500/40' },
+    { value: 'feature', label: 'Feature Request', icon: Zap, description: 'Suggest improvements', color: 'from-purple-500/20 to-purple-500/5 border-purple-500/20 hover:border-purple-500/40' },
+    { value: 'other', label: 'General', icon: HelpCircle, description: 'Other questions', color: 'from-blue-500/20 to-blue-500/5 border-blue-500/20 hover:border-blue-500/40' },
 ];
 
 const priorities = [
-    { value: 'LOW', label: 'Low', description: 'No rush, general question', color: 'text-gray-400 border-gray-500/30 bg-gray-500/10' },
-    { value: 'MEDIUM', label: 'Medium', description: 'Normal priority', color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
-    { value: 'HIGH', label: 'High', description: 'Affecting my workflow', color: 'text-orange-400 border-orange-500/30 bg-orange-500/10' },
-    { value: 'URGENT', label: 'Urgent', description: 'Critical, needs immediate attention', color: 'text-red-400 border-red-500/30 bg-red-500/10' },
+    { value: 'LOW', label: 'Low', icon: Minus, color: 'text-gray-400' },
+    { value: 'MEDIUM', label: 'Medium', icon: ArrowUp, color: 'text-yellow-400' },
+    { value: 'HIGH', label: 'High', icon: ArrowUp, color: 'text-orange-400' },
+    { value: 'URGENT', label: 'Urgent', icon: AlertTriangle, color: 'text-red-400' },
 ];
 
 export default function NewTicketPage() {
@@ -31,13 +25,17 @@ export default function NewTicketPage() {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         subject: '',
-        category: 'technical',
+        category: '',
         priority: 'MEDIUM',
         description: ''
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!formData.category) {
+            toast.error('Please select a category');
+            return;
+        }
         setLoading(true);
 
         try {
@@ -49,154 +47,155 @@ export default function NewTicketPage() {
 
             if (res.ok) {
                 const ticket = await res.json();
-                toast.success('Ticket created successfully!');
+                toast.success('Ticket created!');
                 router.push(`/dashboard/support/${ticket.id}`);
             } else {
                 throw new Error("Failed to create ticket");
             }
         } catch (error) {
             console.error(error);
-            toast.error('Failed to create ticket. Please try again.');
+            toast.error('Failed to create ticket');
             setLoading(false);
         }
     };
 
     const selectedCategory = categories.find(c => c.value === formData.category);
-    const selectedPriority = priorities.find(p => p.value === formData.priority);
 
     return (
-        <div className="max-w-3xl mx-auto py-8 px-4">
-            {/* Back Button */}
-            <div className="mb-6">
-                <Button variant="ghost" className="gap-2 pl-0 text-muted-foreground hover:text-foreground" asChild>
-                    <Link href="/dashboard/support">
-                        <ArrowLeft className="h-4 w-4" /> Back to Support
-                    </Link>
-                </Button>
-            </div>
+        <div className="max-w-3xl mx-auto py-8 px-6">
+            {/* Back */}
+            <Link
+                href="/dashboard/support"
+                className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-8 transition-colors"
+            >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Support
+            </Link>
 
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-                    Open a Support Ticket
-                </h1>
-                <p className="text-muted-foreground mt-2">
-                    Describe your issue in detail. Our team typically responds within 24 hours.
+            <div className="mb-10">
+                <h1 className="text-3xl font-bold tracking-tight mb-2">Create a Ticket</h1>
+                <p className="text-gray-400">
+                    Describe your issue and we'll get back to you within 24 hours.
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit}>
-                <div className="space-y-8">
-                    {/* Category Selection */}
-                    <div className="space-y-3">
-                        <Label className="text-base">What can we help you with?</Label>
-                        <div className="grid grid-cols-2 gap-3">
-                            {categories.map((cat) => {
-                                const Icon = cat.icon;
-                                const isSelected = formData.category === cat.value;
-                                return (
-                                    <button
-                                        key={cat.value}
-                                        type="button"
-                                        onClick={() => setFormData({ ...formData, category: cat.value })}
-                                        className={`
-                                            p-4 rounded-xl border text-left transition-all duration-200
-                                            ${isSelected
-                                                ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
-                                                : 'border-white/10 bg-background/40 hover:border-white/20 hover:bg-background/60'}
-                                        `}
-                                    >
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-primary/20 text-primary' : 'bg-white/10 text-muted-foreground'}`}>
-                                                <Icon className="h-4 w-4" />
-                                            </div>
-                                            <span className={`font-medium ${isSelected ? 'text-primary' : ''}`}>{cat.label}</span>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">{cat.description}</p>
-                                    </button>
-                                );
-                            })}
-                        </div>
+            <form onSubmit={handleSubmit} className="space-y-10">
+                {/* Category */}
+                <div className="space-y-4">
+                    <label className="text-sm font-medium text-gray-300">
+                        What can we help you with?
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        {categories.map((cat) => {
+                            const Icon = cat.icon;
+                            const isSelected = formData.category === cat.value;
+                            return (
+                                <button
+                                    key={cat.value}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, category: cat.value })}
+                                    className={`
+                                        p-4 rounded-2xl border text-left transition-all
+                                        ${isSelected
+                                            ? `bg-gradient-to-br ${cat.color} ring-2 ring-white/20`
+                                            : 'bg-white/[0.02] border-white/10 hover:border-white/20'}
+                                    `}
+                                >
+                                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center mb-3 ${isSelected ? 'bg-white/10' : 'bg-white/5'
+                                        }`}>
+                                        <Icon className={`h-5 w-5 ${isSelected ? 'text-white' : 'text-gray-400'}`} />
+                                    </div>
+                                    <p className={`font-medium mb-0.5 ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                        {cat.label}
+                                    </p>
+                                    <p className="text-xs text-gray-500">{cat.description}</p>
+                                </button>
+                            );
+                        })}
                     </div>
+                </div>
 
-                    {/* Subject */}
-                    <div className="space-y-2">
-                        <Label htmlFor="subject" className="text-base">Subject</Label>
-                        <Input
-                            id="subject"
-                            placeholder="Brief summary of your issue"
-                            value={formData.subject}
-                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                            required
-                            className="bg-background/50 border-white/10 h-12"
-                        />
-                    </div>
+                {/* Subject */}
+                <div className="space-y-2">
+                    <label htmlFor="subject" className="text-sm font-medium text-gray-300">
+                        Subject
+                    </label>
+                    <input
+                        id="subject"
+                        type="text"
+                        placeholder="Brief summary of your issue"
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                        required
+                        className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all"
+                    />
+                </div>
 
-                    {/* Priority Selection */}
-                    <div className="space-y-3">
-                        <Label className="text-base">Priority Level</Label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {priorities.map((p) => {
-                                const isSelected = formData.priority === p.value;
-                                return (
-                                    <button
-                                        key={p.value}
-                                        type="button"
-                                        onClick={() => setFormData({ ...formData, priority: p.value })}
-                                        className={`
-                                            p-3 rounded-lg border text-center transition-all duration-200
-                                            ${isSelected
-                                                ? `${p.color} ring-2 ring-current/20`
-                                                : 'border-white/10 bg-background/40 hover:border-white/20'}
-                                        `}
-                                    >
-                                        <span className={`text-sm font-medium ${isSelected ? '' : 'text-muted-foreground'}`}>
-                                            {p.label}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{selectedPriority?.description}</p>
+                {/* Priority */}
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-300">Priority</label>
+                    <div className="flex gap-2">
+                        {priorities.map((p) => {
+                            const Icon = p.icon;
+                            const isSelected = formData.priority === p.value;
+                            return (
+                                <button
+                                    key={p.value}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, priority: p.value })}
+                                    className={`
+                                        flex-1 h-11 rounded-xl border flex items-center justify-center gap-2 text-sm font-medium transition-all
+                                        ${isSelected
+                                            ? 'bg-white/10 border-white/20'
+                                            : 'bg-white/[0.02] border-white/10 hover:border-white/20'}
+                                    `}
+                                >
+                                    <Icon className={`h-4 w-4 ${p.color}`} />
+                                    <span className={isSelected ? 'text-white' : 'text-gray-400'}>
+                                        {p.label}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
+                </div>
 
-                    {/* Description */}
-                    <div className="space-y-2">
-                        <Label htmlFor="description" className="text-base">Description</Label>
-                        <Textarea
-                            id="description"
-                            placeholder="Please provide as much detail as possible about your issue..."
-                            className="min-h-[180px] bg-background/50 border-white/10 resize-none"
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            required
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Include any error messages, steps to reproduce, or relevant details.
-                        </p>
-                    </div>
+                {/* Description */}
+                <div className="space-y-2">
+                    <label htmlFor="description" className="text-sm font-medium text-gray-300">
+                        Description
+                    </label>
+                    <textarea
+                        id="description"
+                        placeholder="Provide as much detail as possible..."
+                        rows={6}
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        required
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all"
+                    />
+                    <p className="text-xs text-gray-500">
+                        Include error messages, steps to reproduce, or any relevant details.
+                    </p>
+                </div>
 
-                    {/* Submit */}
-                    <div className="flex justify-end pt-4 border-t border-white/5">
-                        <Button
-                            type="submit"
-                            disabled={loading || !formData.subject.trim() || !formData.description.trim()}
-                            className="gap-2 h-12 px-8 shadow-lg shadow-primary/20"
-                            size="lg"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Creating...
-                                </>
-                            ) : (
-                                <>
-                                    <Send className="h-4 w-4" />
-                                    Submit Ticket
-                                </>
-                            )}
-                        </Button>
-                    </div>
+                {/* Submit */}
+                <div className="pt-4">
+                    <button
+                        type="submit"
+                        disabled={loading || !formData.subject.trim() || !formData.description.trim() || !formData.category}
+                        className="group w-full h-14 rounded-xl bg-white text-black font-semibold text-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-lg shadow-white/10"
+                    >
+                        {loading ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                            <>
+                                Submit Ticket
+                                <ArrowUpRight className="h-5 w-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                            </>
+                        )}
+                    </button>
                 </div>
             </form>
         </div>

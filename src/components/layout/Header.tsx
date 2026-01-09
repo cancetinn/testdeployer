@@ -1,44 +1,47 @@
 'use client';
 
 import { Bell, Search, Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Sidebar } from './Sidebar';
-import { ModeToggle } from '@/components/dashboard/ModeToggle';
 
 export function Header() {
     return (
-        <header className="h-16 border-b border-sidebar-border bg-background/50 backdrop-blur-xl flex items-center px-6 sticky top-0 z-50">
+        <header className="h-14 border-b border-white/[0.05] bg-[#0a0a0a]/80 backdrop-blur-xl flex items-center px-6 sticky top-0 z-50">
+            {/* Mobile Menu */}
             <div className="md:hidden mr-4">
                 <Sheet>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <Menu className="h-5 w-5" />
-                        </Button>
+                        <button className="p-2 rounded-lg hover:bg-white/5 transition-colors">
+                            <Menu className="h-5 w-5 text-gray-400" />
+                        </button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-64 border-r border-sidebar-border">
+                    <SheetContent side="left" className="p-0 w-64 bg-[#0a0a0a] border-white/[0.08]">
                         <Sidebar />
                     </SheetContent>
                 </Sheet>
             </div>
 
-            <div className="flex items-center gap-4 flex-1">
+            {/* Search */}
+            <div className="flex-1 flex items-center gap-4">
                 <div className="relative max-w-md w-full hidden md:block">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search bots, deployments..."
-                        className="pl-9 bg-secondary/50 border-transparent focus-visible:bg-background focus-visible:border-ring transition-all"
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <input
+                        type="text"
+                        placeholder="Search..."
+                        className="w-full h-9 pl-9 pr-4 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/30 transition-all"
                     />
+                    <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex h-5 items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-gray-500">
+                        ⌘K
+                    </kbd>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
-                <ModeToggle />
-                <Button variant="ghost" size="icon" className="text-muted-foreground relative">
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full" />
-                </Button>
+            {/* Actions */}
+            <div className="flex items-center gap-1">
+                <button className="relative p-2 rounded-lg hover:bg-white/5 transition-colors">
+                    <Bell className="h-5 w-5 text-gray-400" />
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-purple-500 rounded-full ring-2 ring-[#0a0a0a]" />
+                </button>
             </div>
         </header>
     );
