@@ -36,10 +36,13 @@ export default function NewProjectPage() {
     const [teams, setTeams] = useState<Team[]>([]);
     const [selectedTeam, setSelectedTeam] = useState<string>('personal');
 
+    const [selectedTeam, setSelectedTeam] = useState<string>('personal');
+
     // GitHub State
     const [repos, setRepos] = useState<Repo[]>([]);
     const [selectedRepo, setSelectedRepo] = useState<string>('');
     const [loadingRepos, setLoadingRepos] = useState(false);
+    const [debugScopes, setDebugScopes] = useState<string>('');
 
     useEffect(() => {
         const fetchTeams = async () => {
@@ -69,8 +72,9 @@ export default function NewProjectPage() {
                         }
                     });
                     console.log("GitHub Response Status:", res.status);
-                    console.log("Token Scopes:", res.headers.get("x-oauth-scopes"));
-                    console.log("Accepted Scopes:", res.headers.get("x-oauth-accepted-scopes"));
+                    const scopes = res.headers.get("x-oauth-scopes");
+                    setDebugScopes(scopes || 'No scopes found');
+
                     if (res.ok) {
                         const data = await res.json();
                         console.log("Fetched Repos Count:", data.length);
@@ -273,6 +277,13 @@ export default function NewProjectPage() {
                                 defaultValue={repos.find(r => r.id.toString() === selectedRepo)?.full_name.split('/')[1] || ''}
                             />
                         </div>
+
+                        {debugScopes && (
+                            <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded border border-dashed">
+                                Debug Scopes: {debugScopes}
+                            </div>
+                        )}
+
                         <TeamSelector />
                     </CardContent>
                     <CardFooter>
