@@ -36,8 +36,6 @@ export default function NewProjectPage() {
     const [teams, setTeams] = useState<Team[]>([]);
     const [selectedTeam, setSelectedTeam] = useState<string>('personal');
 
-    const [selectedTeam, setSelectedTeam] = useState<string>('personal');
-
     // GitHub State
     const [repos, setRepos] = useState<Repo[]>([]);
     const [selectedRepo, setSelectedRepo] = useState<string>('');
