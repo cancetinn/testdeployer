@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { LayoutDashboard, Plus, Settings, LogOut, Terminal, LifeBuoy, Shield, HardDrive, ChevronRight, Rocket } from 'lucide-react';
+import { LayoutDashboard, Plus, Settings, LogOut, Terminal, LifeBuoy, Shield, HardDrive, ChevronRight, Rocket, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from 'next-auth/react';
@@ -13,6 +13,7 @@ const mainNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
     { icon: Rocket, label: 'My Bots', href: '/dashboard/bots' },
     { icon: Terminal, label: 'Deployments', href: '/dashboard/deployments' },
+    { icon: Users, label: 'Community', href: '/community' },
 ];
 
 export function Sidebar() {

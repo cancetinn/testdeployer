@@ -22,6 +22,11 @@ model User {
   tickets         Ticket[]        @relation("TicketAuthor")
   assignedTickets Ticket[]        @relation("TicketAssignee")
   ticketMessages  TicketMessage[]
+  
+  // Community
+  publishedBots   PublishedBot[]
+  botReviews      BotReview[]
+  botStars        BotStar[]
 }
 
 enum Role {
@@ -49,6 +54,9 @@ model Bot {
   deployments Deployment[]
   envVars     EnvironmentVariable[]
   logs        BotLog[]
+  
+  // Community
+  publishedVersions PublishedBot[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -121,3 +129,79 @@ model BotLog {
   
   @@index([botId, createdAt])
 }
+
+// ============================================
+// Community Bot Marketplace
+// ============================================
+
+model PublishedBot {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique  // URL-friendly name
+  description String
+  readme      String?  // Markdown README
+  
+  // Source bot reference
+  sourceBotId String
+  sourceBot   Bot      @relation(fields: [sourceBotId], references: [id])
+  
+  // Author info
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  // Metadata
+  category    String   // utility, moderation, music, fun, economy
+  tags        String   // comma-separated: "moderation,automod,security"
+  version     String   @default("1.0.0")
+  
+  // Stats
+  downloads   Int      @default(0)
+  stars       Int      @default(0)
+  
+  // Status
+  status      String   @default("approved") // pending, approved, rejected
+  isPublic    Boolean  @default(true)
+  
+  // Safe snapshot of bot files
+  filesSnapshot String  // Path to sanitized zip file
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  reviews     BotReview[]
+  starredBy   BotStar[]
+  
+  @@index([category])
+  @@index([status, isPublic])
+}
+
+model BotReview {
+  id        String   @id @default(cuid())
+  content   String
+  rating    Int      // 1-5
+  
+  botId     String
+  bot       PublishedBot @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([botId, authorId])  // One review per user per bot
+}
+
+model BotStar {
+  id        String   @id @default(cuid())
+  
+  botId     String
+  bot       PublishedBot @relation(fields: [botId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([botId, userId])  // One star per user per bot
+}
+

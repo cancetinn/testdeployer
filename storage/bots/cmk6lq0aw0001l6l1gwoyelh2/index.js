@@ -21,11 +21,11 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-// Periodic logging removed to reduce noise
-// setInterval(() => {
-//     const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
-//     console.log(`[Heartbeat] Memory usage: ${memoryUsage.toFixed(2)} MB`);
-// }, 5000);
+// Simulate some periodic logging
+setInterval(() => {
+    const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
+    console.log(`[Heartbeat] Memory usage: ${memoryUsage.toFixed(2)} MB`);
+}, 5000);
 
 const token = process.env.DISCORD_TOKEN;
 
