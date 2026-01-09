@@ -102,6 +102,7 @@ export async function POST(req: Request) {
         // Detect storage path (Docker vs Local)
         const { getStorageDir } = require('@/lib/storage');
         const storagePath = getStorageDir();
+        const botId = bot.id;
         // fallback to logged path if env missing, or current directory structure
 
         if (repoUrl) {

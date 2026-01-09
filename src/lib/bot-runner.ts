@@ -9,7 +9,7 @@ const execAsync = util.promisify(exec);
 
 import { getStorageDir } from '@/lib/storage';
 
-const execAsync = util.promisify(exec);
+
 
 // Legacy check removed, as getStorageDir handles creation
 
