@@ -6,25 +6,43 @@ import { stopBot } from "@/lib/bot-runner";
 import fs from 'fs';
 import path from 'path';
 
+import { checkBotAccess } from "@/lib/access";
+
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return new NextResponse("Unauthorized", { status: 401 });
-
     const { id } = await params;
+    const userId = (session.user as any).id;
 
-    const bot = await prisma.bot.findUnique({
-        where: { id },
-        include: { owner: true }
-    });
-
-    if (!bot || bot.owner.email !== session.user.email) {
-        return new NextResponse("Not found", { status: 404 });
-    }
+    const bot = await checkBotAccess(id, userId, 'READ');
+    if (!bot) return new NextResponse("Not found or forbidden", { status: 404 });
 
     return NextResponse.json(bot);
+}
+
+export async function PUT(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) return new NextResponse("Unauthorized", { status: 401 });
+    const { id } = await params;
+    const userId = (session.user as any).id;
+    const { name, description } = await req.json();
+
+    const bot = await checkBotAccess(id, userId, 'WRITE');
+    if (!bot) return new NextResponse("Not found or forbidden", { status: 403 });
+
+    // Update bot
+    const updatedBot = await prisma.bot.update({
+        where: { id },
+        data: { name, description }
+    });
+
+    return NextResponse.json(updatedBot);
 }
 
 export async function DELETE(
@@ -33,25 +51,18 @@ export async function DELETE(
 ) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return new NextResponse("Unauthorized", { status: 401 });
-
     const { id } = await params;
+    const userId = (session.user as any).id;
 
-    // Verify ownership
-    const bot = await prisma.bot.findUnique({
-        where: { id },
-        include: { owner: true }
-    });
-
-    if (!bot || bot.owner.email !== session.user.email) {
-        return new NextResponse("Not found or forbidden", { status: 404 });
-    }
+    const bot = await checkBotAccess(id, userId, 'DELETE');
+    if (!bot) return new NextResponse("Not found or forbidden", { status: 403 });
 
     try {
         // 1. Stop Docker Container
         try {
             await stopBot(id);
         } catch (e) {
-            console.error("Failed to stop bot during deletion (might be already stopped)", e);
+            console.error("Failed to stop bot during deletion", e);
         }
 
         // 2. Delete Storage Files
@@ -60,19 +71,9 @@ export async function DELETE(
             fs.rmSync(botDir, { recursive: true, force: true });
         }
 
-        // 3. Delete Database Record
-        // Note: If relations don't have cascade, we might need to delete them manually.
-        // EnvVars have cascade. Deployments don't.
-        // Let's delete related deployments manually to be safe.
-        await prisma.deployment.deleteMany({
-            where: { botId: id }
-        });
-
-        // Also delete any other related records if strictly needed, but simple DELETE on bot should work if EnvVar is cascaded.
-
-        await prisma.bot.delete({
-            where: { id }
-        });
+        // 3. Delete Database Record (Cascading where possible, manual where not)
+        await prisma.deployment.deleteMany({ where: { botId: id } });
+        await prisma.bot.delete({ where: { id } });
 
         return NextResponse.json({ success: true });
 

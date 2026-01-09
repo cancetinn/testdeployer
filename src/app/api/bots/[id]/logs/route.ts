@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getBotLogs, clearBotLogs } from "@/lib/bot-runner";
+import { checkBotAccess } from "@/lib/access";
 
 export async function GET(
     req: Request,
@@ -13,12 +14,11 @@ export async function GET(
 
     const { id } = await params;
 
-    const bot = await prisma.bot.findUnique({
-        where: { id },
-        include: { owner: true }
-    });
+    const userId = (session.user as any).id;
 
-    if (!bot || bot.owner.email !== session.user.email) {
+    const bot = await checkBotAccess(id, userId, 'READ');
+
+    if (!bot) {
         return new NextResponse("Not found or forbidden", { status: 404 });
     }
 

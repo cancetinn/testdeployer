@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { startBot, stopBot } from "@/lib/bot-runner";
+import { checkBotAccess } from "@/lib/access";
 
 export async function POST(
     req: Request,
@@ -15,12 +16,11 @@ export async function POST(
     const body = await req.json();
     const { action } = body;
 
-    const bot = await prisma.bot.findUnique({
-        where: { id },
-        include: { owner: true }
-    });
+    // Need WRITE permission to perform actions
+    const userId = (session.user as any).id;
+    const bot = await checkBotAccess(id, userId, 'WRITE');
 
-    if (!bot || bot.owner.email !== session.user.email) {
+    if (!bot) {
         return new NextResponse("Not found or forbidden", { status: 404 });
     }
 

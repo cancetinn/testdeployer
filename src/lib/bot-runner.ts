@@ -95,13 +95,10 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
             envVars.forEach(v => env[v.key] = v.value);
 
             console.log(`Starting process for ${botId}`);
-            if (env.DISCORD_TOKEN) {
-                console.log(`[DEBUG] Injecting DISCORD_TOKEN. Length: ${env.DISCORD_TOKEN.length}, First 5 chars: ${env.DISCORD_TOKEN.substring(0, 5)}...`);
-                if (env.DISCORD_TOKEN.length < 50) {
-                    console.log(`[WARN] DISCORD_TOKEN looks too short (${env.DISCORD_TOKEN.length} chars). Are you sure this isn't the Client Secret? A Bot Token is usually much longer.`);
-                }
-            } else {
-                console.log(`[DEBUG] WARNING: DISCORD_TOKEN is missing! Keys available: ${envVars.map(v => v.key).join(', ')}`);
+
+            // Security: Ensure token exists but do not log it
+            if (!env.DISCORD_TOKEN) {
+                console.warn(`[WARN] Bot ${botId} missing DISCORD_TOKEN`);
             }
 
             try {
@@ -139,7 +136,7 @@ export async function manageContainer(botId: string, action: 'start' | 'stop') {
                             });
                         }
                     } catch (e) {
-                        console.error("Failed to write log to DB", e);
+                        // Silent fail for log write
                     }
                 };
 

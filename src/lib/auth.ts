@@ -1,10 +1,12 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GithubProvider from "next-auth/providers/github";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
+    adapter: PrismaAdapter(prisma),
     session: {
         strategy: "jwt",
     },
@@ -12,6 +14,10 @@ export const authOptions: NextAuthOptions = {
         signIn: "/login",
     },
     providers: [
+        GithubProvider({
+            clientId: process.env.GITHUB_CLIENT_ID || "",
+            clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+        }),
         CredentialsProvider({
             name: "Sign in",
             credentials: {
@@ -31,6 +37,10 @@ export const authOptions: NextAuthOptions = {
 
                 if (!user) {
                     return null;
+                }
+
+                if (!user.password) {
+                    return null; // OAuth user trying to use password
                 }
 
                 const isPasswordValid = await bcrypt.compare(
@@ -58,14 +68,20 @@ export const authOptions: NextAuthOptions = {
                 session.user.id = token.sub;
                 // @ts-ignore
                 session.user.role = token.role;
+                // @ts-ignore
+                session.accessToken = token.accessToken; // Pass GH token to session
             }
             return session;
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, account }) {
             if (user) {
                 token.sub = user.id;
                 // @ts-ignore
                 token.role = user.role;
+            }
+            // Persist the OAuth access_token to the token right after signin
+            if (account) {
+                token.accessToken = account.access_token;
             }
             return token;
         }

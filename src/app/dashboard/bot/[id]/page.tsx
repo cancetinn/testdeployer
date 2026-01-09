@@ -136,8 +136,8 @@ export default function BotDetailPage() {
                             <div className="relative">
                                 <div className={`absolute inset-0 rounded-2xl blur-xl ${isOnline ? 'bg-green-500/40' : 'bg-gray-500/20'}`} />
                                 <div className={`relative h-20 w-20 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-2xl ${isOnline
-                                        ? 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600'
-                                        : 'bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700'
+                                    ? 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600'
+                                    : 'bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700'
                                     }`}>
                                     {bot.name.charAt(0).toUpperCase()}
                                 </div>
@@ -208,6 +208,15 @@ export default function BotDetailPage() {
 
                             <div className="hidden sm:block w-px h-8 bg-white/10 mx-1" />
 
+                            <Link href={`/editor/${id}`}>
+                                <Button
+                                    size="sm"
+                                    className="bg-[#1e1e1e] hover:bg-[#2d2d2d] text-gray-300 border border-white/10 gap-2"
+                                >
+                                    <Code2 className="h-4 w-4" /> Editor
+                                </Button>
+                            </Link>
+
                             <Link href={`/dashboard/bot/${id}/publish`}>
                                 <Button
                                     size="sm"
@@ -242,8 +251,8 @@ export default function BotDetailPage() {
                                 <span className="text-xs md:text-sm text-gray-500 font-medium">{stat.label}</span>
                             </div>
                             <div className={`text-xl md:text-2xl font-bold ${stat.label === 'Status'
-                                    ? isOnline ? 'text-green-400' : 'text-gray-500'
-                                    : 'text-white'
+                                ? isOnline ? 'text-green-400' : 'text-gray-500'
+                                : 'text-white'
                                 }`}>
                                 {stat.value}
                             </div>

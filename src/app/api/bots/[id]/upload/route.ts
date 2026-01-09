@@ -7,6 +7,7 @@ import path from 'path';
 import AdmZip from 'adm-zip';
 
 import { createDeployment, updateDeployment } from "@/lib/deployments";
+import { checkBotAccess } from "@/lib/access";
 
 // ... imports ...
 
@@ -20,12 +21,10 @@ export async function POST(
     const { id } = await params;
 
     // Verify ownership
-    const bot = await prisma.bot.findUnique({
-        where: { id },
-        include: { owner: true }
-    });
+    const userId = (session.user as any).id;
+    const bot = await checkBotAccess(id, userId, 'WRITE');
 
-    if (!bot || bot.owner.email !== session.user.email) {
+    if (!bot) {
         return new NextResponse("Not found or forbidden", { status: 404 });
     }
 

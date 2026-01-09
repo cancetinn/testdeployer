@@ -16,7 +16,17 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  bots      Bot[]
+  // Teams & Collaboration
+  teams           TeamMember[]
+  collaborations  BotCollaborator[]
+  sentInvitations TeamInvitation[] @relation("TeamInviter")
+  notifications   Notification[]
+  
+  // GitHub Integration
+  accounts        Account[]
+  
+  // Restored Relations
+  bots            Bot[]
   
   // Support System
   tickets         Ticket[]        @relation("TicketAuthor")
@@ -36,16 +46,114 @@ enum Role {
   USER
 }
 
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum BotRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  avatarUrl   String?
+  
+  members     TeamMember[]
+  invitations TeamInvitation[]
+  bots        Bot[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      TeamRole @default(MEMBER)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([teamId, userId])
+}
+
+model TeamInvitation {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  email     String
+  inviterId String
+  inviter   User     @relation("TeamInviter", fields: [inviterId], references: [id])
+  
+  role      TeamRole @default(MEMBER)
+  status    String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  
+  @@unique([teamId, email])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type      String   // TEAM_INVITE, SYSTEM, BOT_ALERT
+  title     String
+  message   String
+  data      String?  // JSON string
+  read      Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+}
+
+model BotCollaborator {
+  id        String   @id @default(cuid())
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      BotRole  @default(EDITOR)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([botId, userId])
+}
+
 model Bot {
   id          String   @id @default(cuid())
   name        String
   description String?
-  ownerId     String
-  owner       User     @relation(fields: [ownerId], references: [id])
+  
+  // Ownership: Either User (Personal) or Team
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id])
+  
+  teamId      String?
+  team        Team?    @relation(fields: [teamId], references: [id])
+  
+  collaborators BotCollaborator[]
   
   status      String   @default("offline") // online, offline, starting, error
   pid         Int?     // Process ID if running
   port        Int?     // Port if applicable
+  
+  // GitHub Integration
+  githubRepo      String? // "username/repo"
+  githubBranch    String? @default("main")
+  githubWebhookId String?
+  autoDeploy      Boolean @default(false)
   
   // Resources (Last known)
   cpuUsage    Float    @default(0)
@@ -65,10 +173,13 @@ model Bot {
 model Deployment {
   id        String   @id @default(cuid())
   botId     String
-  bot       Bot      @relation(fields: [botId], references: [id])
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
   
   status    String   @default("queued") // queued, building, completed, failed
   logPath   String?  // Path to log file
+  
+  trigger   String   @default("manual") // manual, github_push, schedule
+  commitHash String? // If github trigger
   
   startedAt DateTime @default(now())
   finishedAt DateTime?
@@ -145,7 +256,7 @@ model PublishedBot {
   sourceBotId String
   sourceBot   Bot      @relation(fields: [sourceBotId], references: [id])
   
-  // Author info
+  // Author info (User only for now to simplify)
   authorId    String
   author      User     @relation(fields: [authorId], references: [id])
   
@@ -203,5 +314,24 @@ model BotStar {
   createdAt DateTime @default(now())
   
   @@unique([botId, userId])  // One star per user per bot
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
 }
 

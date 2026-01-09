@@ -12,18 +12,36 @@ export async function GET(req: Request) {
     }
 
     try {
+        const user = await prisma.user.findUnique({
+            where: { email: session.user.email }
+        });
+
+        if (!user) return new NextResponse("User not found", { status: 404 });
+
         const bots = await prisma.bot.findMany({
             where: {
-                owner: {
-                    email: session.user.email,
-                },
+                OR: [
+                    { ownerId: user.id },
+                    {
+                        team: {
+                            members: {
+                                some: {
+                                    userId: user.id
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            include: {
+                team: true // Include team info to display badge if needed
             },
             orderBy: {
                 createdAt: 'desc',
             }
         });
 
-        const syncedBots = await Promise.all(bots.map(bot => syncBotStatus(bot)));
+        const syncedBots = await Promise.all(bots.map((bot: any) => syncBotStatus(bot)));
 
         return NextResponse.json(syncedBots);
     } catch (error) {
@@ -41,7 +59,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { name, description } = body;
+        const { name, description, teamId, repoUrl } = body;
 
         if (!name) {
             return new NextResponse("Name is required", { status: 400 });
@@ -55,12 +73,29 @@ export async function POST(req: Request) {
             return new NextResponse("User not found", { status: 404 });
         }
 
+        // Validate team membership if teamId provided
+        if (teamId) {
+            const teamMember = await prisma.teamMember.findUnique({
+                where: {
+                    teamId_userId: {
+                        teamId,
+                        userId: user.id
+                    }
+                }
+            });
+            if (!teamMember) {
+                return new NextResponse("You are not a member of this team", { status: 403 });
+            }
+        }
+
         const bot = await prisma.bot.create({
             data: {
                 name,
                 description,
                 ownerId: user.id,
-                status: 'offline', // Default status
+                teamId: teamId, // Assign team if present
+                status: 'offline',
+                githubRepo: repoUrl || undefined
             },
         });
 

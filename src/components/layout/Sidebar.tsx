@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { LayoutDashboard, Plus, Settings, LogOut, Terminal, LifeBuoy, Shield, HardDrive, ChevronRight, Rocket, Users } from 'lucide-react';
+import { LayoutDashboard, Plus, Settings, LogOut, Terminal, LifeBuoy, Shield, HardDrive, ChevronRight, Rocket, Users, Globe, GitBranch } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from 'next-auth/react';
@@ -12,8 +12,9 @@ import { useSession, signOut } from 'next-auth/react';
 const mainNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
     { icon: Rocket, label: 'My Bots', href: '/dashboard/bots' },
+    { icon: Users, label: 'Teams', href: '/dashboard/teams' },
     { icon: Terminal, label: 'Deployments', href: '/dashboard/deployments' },
-    { icon: Users, label: 'Community', href: '/community' },
+    { icon: Globe, label: 'Community', href: '/community' },
 ];
 
 export function Sidebar() {
@@ -74,6 +75,19 @@ export function Sidebar() {
                     <p className="px-3 mb-2 text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                         System
                     </p>
+
+                    <Link
+                        href="/dashboard/integrations"
+                        className={cn(
+                            'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                            pathname?.startsWith('/dashboard/integrations')
+                                ? 'bg-white/10 text-white'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        )}
+                    >
+                        <GitBranch className="h-4 w-4 text-gray-500 group-hover:text-gray-300" />
+                        Integrations
+                    </Link>
 
                     <Link
                         href="/dashboard/support"
